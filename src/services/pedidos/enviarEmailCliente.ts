@@ -16,7 +16,7 @@ function getEtapaAtual(pedido: any) {
 }
 
 function podeEnviarEmailSaida(pedido: any): boolean {
-    if (!pedido.dataDeEntrega) return true;
+    if (!pedido.dataDeEntrega) return false;
 
     const datasEntrega = Array.isArray(pedido.dataDeEntrega)
         ? pedido.dataDeEntrega
@@ -28,7 +28,7 @@ function podeEnviarEmailSaida(pedido: any): boolean {
 
     if (!maiorDataEntrega) return false;
 
-    return maiorDataEntrega.isSameOrBefore(dayjs(), "day");
+    return maiorDataEntrega.isSame(dayjs(), "day");
 }
 
 function getNomeCliente(pedido: any): string {
