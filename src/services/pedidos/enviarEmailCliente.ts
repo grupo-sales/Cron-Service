@@ -123,7 +123,7 @@ export class EnviarEmailCliente {
             const response = await axios.post("http://172.16.0.34:3000/api/send-email", {
                 data: {
                     mail: {
-                        user: "teste@contatosales.com.br",
+                        user: "naoresponda@contatosales.com.br",
                         options: {
                             subject: config.subject,
                             from: "Sales",

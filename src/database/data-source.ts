@@ -1,17 +1,28 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { env } from "../config/env";
+import "dotenv/config";
+
+const isProduction = process.env.PRODUCTION === "true";
 
 export const AppDataSource = new DataSource({
-  type: "mysql", // ou postgres
-  host: env.DB_HOST,
-  port: env.DB_PORT,
-  username: env.DB_USER,
-  password: env.DB_PASSWORD,
-  database: env.DB_DATABASE,
+  type: "mysql",
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 
-  entities: ["src/database/entities/**/*.{ts,js}"],
-  migrations: ["src/database/migrations/*.{ts,js}"],
+  entities: [
+    isProduction
+      ? "dist/database/entities/**/*.js"
+      : "src/database/entities/**/*.ts",
+  ],
+
+  migrations: [
+    isProduction
+      ? "dist/database/migrations/**/*.js"
+      : "src/database/migrations/**/*.ts",
+  ],
 
   synchronize: false,
   logging: false,
