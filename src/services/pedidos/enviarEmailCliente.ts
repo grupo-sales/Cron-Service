@@ -15,6 +15,22 @@ function getEtapaAtual(pedido: any) {
     return null;
 }
 
+function podeEnviarEmailSaida(pedido: any): boolean {
+    if (!pedido.dataDeEntrega) return true;
+
+    const datasEntrega = Array.isArray(pedido.dataDeEntrega)
+        ? pedido.dataDeEntrega
+        : [pedido.dataDeEntrega];
+
+    const maiorDataEntrega = datasEntrega
+        .map((data: string) => dayjs(data))
+        .sort((a: any, b: any) => b.valueOf() - a.valueOf())[0];
+
+    if (!maiorDataEntrega) return false;
+
+    return maiorDataEntrega.isSameOrBefore(dayjs(), "day");
+}
+
 function getNomeCliente(pedido: any): string {
   const fantasia = pedido?.cliente?.fantasia?.trim();
   const nome = pedido?.cliente?.nome?.trim();
@@ -45,6 +61,13 @@ type PedidoComNota = PedidoRastreamento & {
 };
 
 export class EnviarEmailCliente {
+    static etapaEmailMap = {
+        EMISSAO: "nota_fiscal",
+        SEPARACAO: "em_separacao",
+        SAIDA: "saiu_para_entrega",
+        ENTREGA: "entregue",
+        CANCELAMENTO: "cancelada",
+    };
 
     static emailConfig = {
         CANCELAMENTO: {
@@ -163,6 +186,13 @@ export class EnviarEmailCliente {
             const etapa = getEtapaAtual(pedido);
             if (!etapa) continue;
 
+            if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido)) {
+                console.log(
+                    `Saída futura, aguardando maior data (${pedido.idPedido})`
+                );
+                continue;
+            }
+
             const infoNota = await NotasRepository.findNota(
                 pedido.idNota,
                 pedido.idFilial
@@ -176,7 +206,8 @@ export class EnviarEmailCliente {
 
             await PedidoRastreamentoRepository.atualizarStatus(
                 pedido.id,
-                dayjs().format()
+                dayjs().format(),
+                this.etapaEmailMap[etapa as keyof typeof this.etapaEmailMap]
             )
         }
 
