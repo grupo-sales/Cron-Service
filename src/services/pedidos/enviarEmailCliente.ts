@@ -66,7 +66,6 @@ export class EnviarEmailCliente {
         SEPARACAO: "em_separacao",
         SAIDA: "saiu_para_entrega",
         ENTREGA: "entregue",
-        CANCELAMENTO: "cancelada",
     };
 
     static emailConfig = {
