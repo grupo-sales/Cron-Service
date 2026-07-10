@@ -155,6 +155,7 @@ export class EnviarEmailCliente {
                     fields: {
                         nome: getNomeCliente(pedido),
                         pedidoId: pedido?.idPedido,
+                        notaId: pedido?.idNota,
                         valorTotal: formatCurrency(pedido?.valorTotalNota),
                     },
                     templateId: config.templateId,
