@@ -16,19 +16,19 @@ function getEtapaAtual(pedido: any) {
 }
 
 function podeEnviarEmailSaida(pedido: any): boolean {
-    if (!pedido.dataDeEntrega) return false;
+    if (!pedido.dataDeSaida) return false;
 
-    const datasEntrega = Array.isArray(pedido.dataDeEntrega)
-        ? pedido.dataDeEntrega
-        : [pedido.dataDeEntrega];
+    const datasSaida = Array.isArray(pedido.dataDeSaida)
+        ? pedido.dataDeSaida
+        : [pedido.dataDeSaida];
 
-    const maiorDataEntrega = datasEntrega
+    const maiorDataSaida = datasSaida
         .map((data: string) => dayjs(data))
         .sort((a: any, b: any) => b.valueOf() - a.valueOf())[0];
 
-    if (!maiorDataEntrega) return false;
+    if (!maiorDataSaida) return false;
 
-    return maiorDataEntrega.isSame(dayjs(), "day");
+    return maiorDataSaida.isSame(dayjs(), "day");
 }
 
 function getNomeCliente(pedido: any): string {
