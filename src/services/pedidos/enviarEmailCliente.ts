@@ -5,6 +5,7 @@ import { PedidoRastreamentoRepository } from "../../database/repositories/Pedido
 import { NotasRepository } from "../../database/repositories/NotasRepository";
 import { PedidoRastreamento } from "../../database/entities/mysql/PedidoRastreamento";
 import { formatCurrency } from "../../functions/formatCurrency";
+import { EmailEnviadosRepository } from "../../database/repositories/EmailEnviadosRepository";
 
 function getEtapaAtual(pedido: any) {
     if (pedido.dataCancelamento) return "CANCELAMENTO";
@@ -136,6 +137,8 @@ export class EnviarEmailCliente {
         return configEtapa.normal;
     }
 
+    static executando = false;
+
     static async enviarEmail(etapa: any, pedido: any) {
         const config = this.getEmailConfig(etapa, pedido.retira);
 
@@ -164,53 +167,115 @@ export class EnviarEmailCliente {
 
             console.log(`Email enviado (${etapa} | retira=${pedido.retira})`);
 
+            await EmailEnviadosRepository.save({
+                email: formatarDestinatarios(pedido?.cliente?.email),
+                tipo: 'pedidos',
+                data: {
+                    cliente: getNomeCliente(pedido),
+                    pedidoId: pedido?.idPedido,
+                    notaId: pedido?.idNota,
+                    valorTotal: formatCurrency(pedido?.valorTotalNota),
+                    etapa
+                },
+            })
+
         } catch (error) {
             console.log("Erro ao enviar email:", error);
         }
     }
 
     static async execute() {
-
-        const ultimaAtt = await ControleCronRepository.lastAtualizacao();
-        if (!ultimaAtt) return;
-
-        const pedidos = await PedidoRastreamentoRepository.findByUltimaAtualizacao(
-            dayjs(ultimaAtt.ultima_execucao).toDate()
-        );
-
-        if (!pedidos?.length) return;
-
-        for (const pedidoOriginal of pedidos) {
-            const pedido = pedidoOriginal as PedidoComNota;
-
-            const etapa = getEtapaAtual(pedido);
-            if (!etapa) continue;
-
-            if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido)) {
-                console.log(
-                    `Saída futura, aguardando maior data (${pedido.idPedido})`
-                );
-                continue;
-            }
-
-            const infoNota = await NotasRepository.findNota(
-                pedido.idNota,
-                pedido.idFilial
-            );
-
-            if (!infoNota) continue;
-
-            pedido.valorTotalNota = infoNota?.valorTotalNota;
-
-            await this.enviarEmail(etapa as keyof typeof this.emailConfig, pedido);
-
-            await PedidoRastreamentoRepository.atualizarStatus(
-                pedido.id,
-                dayjs().format(),
-                this.etapaEmailMap[etapa as keyof typeof this.etapaEmailMap]
-            )
+        if (this.executando) {
+            console.log("Cron já está em execução");
+            return;
         }
 
-        await ControleCronRepository.updateTime();
+        this.executando = true;
+
+        try {
+            const ultimaAtt = await ControleCronRepository.lastAtualizacao();
+
+            if (!ultimaAtt) return;
+
+            const pedidos = await PedidoRastreamentoRepository.findByUltimaAtualizacao(
+                dayjs(ultimaAtt.ultima_execucao).toDate()
+            );
+
+            if (!pedidos?.length) return;
+
+            for (const pedidoOriginal of pedidos) {
+                const pedido = pedidoOriginal as PedidoComNota;
+
+                const etapa = getEtapaAtual(pedido);
+
+                if (!etapa) continue;
+
+
+                if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido)) {
+                    console.log(
+                        `Saída futura, aguardando maior data (${pedido.idPedido})`
+                    );
+                    continue;
+                }
+
+
+                const infoNota = await NotasRepository.findNota(
+                    pedido.idNota,
+                    pedido.idFilial
+                );
+
+                if (!infoNota) continue;
+
+                pedido.valorTotalNota = infoNota.valorTotalNota;
+
+
+                const ultimoEmailEnviado =
+                    await PedidoRastreamentoRepository.findByUltimoEmailEnviado(
+                        pedido.id
+                    );
+
+
+                const etapaAtual =
+                    this.etapaEmailMap[
+                        etapa as keyof typeof this.etapaEmailMap
+                    ];
+
+
+                /**
+                 * Bloqueia qualquer reenvio da mesma etapa
+                 */
+                if (
+                    ultimoEmailEnviado?.ultimaEtapaEmail === etapaAtual
+                ) {
+                    console.log(
+                        `Email já enviado (${etapa} | retira=${pedido.retira})`
+                    );
+
+                    continue;
+                }
+
+
+                await EnviarEmailCliente.enviarEmail(
+                    etapa,
+                    pedido
+                );
+
+
+                await PedidoRastreamentoRepository.atualizarStatus(
+                    pedido.id,
+                    dayjs().format(),
+                    etapaAtual
+                );
+            }
+
+
+            await ControleCronRepository.updateTime();
+
+        } catch (error) {
+            console.log("Erro no cron de email:", error);
+
+        } finally {
+            this.executando = false;
+        }
     }
 }

@@ -14,14 +14,14 @@ export const AppDataSource = new DataSource({
 
   entities: [
     isProduction
-      ? "dist/database/entities/**/*.js"
-      : "src/database/entities/**/*.ts",
+      ? "dist/database/entities/mysql/**/*.js"
+      : "src/database/entities/mysql/**/*.ts",
   ],
 
   migrations: [
     isProduction
-      ? "dist/database/migrations/**/*.js"
-      : "src/database/migrations/**/*.ts",
+      ? "dist/database/migrations/mysql/**/*.js"
+      : "src/database/migrations/mysql/**/*.ts",
   ],
 
   synchronize: false,

@@ -51,4 +51,15 @@ export const PedidoRastreamentoRepository = AppDataSource.getRepository(PedidoRa
         });
     },
 
+    findByUltimoEmailEnviado(id:number){
+        return this.findOne({
+            where: {
+                id: id
+            },
+            order: {
+                ultimoEmailEnviadoEm: "DESC"
+            }
+        });
+    }
+
 });
