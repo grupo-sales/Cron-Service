@@ -212,7 +212,7 @@ export class EnviarEmailCliente {
                 if (!etapa) continue;
 
 
-                if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido)) {
+                if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido) && pedido.retira) {
                     console.log(
                         `Saída futura, aguardando maior data (${pedido.idPedido})`
                     );
