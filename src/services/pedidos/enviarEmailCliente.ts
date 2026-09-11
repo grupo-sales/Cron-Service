@@ -22,20 +22,18 @@ function getEtapaAtual(pedido: any) {
 
 function podeEnviarEmailSaida(pedido: any): boolean {
     if (!pedido.dataDeSaida) return false;
-
     const datasSaida = Array.isArray(pedido.dataDeSaida)
         ? pedido.dataDeSaida
         : [pedido.dataDeSaida];
 
     const maiorDataSaida = datasSaida
-        .map((data: string) => dayjs.utc(data).tz("America/Sao_Paulo"))
+        // Lida diretamente no fuso de SP, sem passar por UTC antes
+        .map((data: string) => dayjs.tz(data, "America/Sao_Paulo")) 
         .sort((a: any, b: any) => b.valueOf() - a.valueOf())[0];
 
     if (!maiorDataSaida) return false;
 
-    const hojeSaoPaulo = dayjs()
-        .tz("America/Sao_Paulo");
-
+    const hojeSaoPaulo = dayjs().tz("America/Sao_Paulo");
     return maiorDataSaida.isSame(hojeSaoPaulo, "day");
 }
 
@@ -68,31 +66,23 @@ function getDataEtapa(pedido: any, etapa: string) {
     switch (etapa) {
         case "CANCELAMENTO":
             return pedido.dataCancelamento;
-
         case "ENTREGA":
             return pedido.dataEntrega;
-
         case "SAIDA": {
             if (!pedido.dataDeSaida) return null;
-
             const datasSaida = Array.isArray(pedido.dataDeSaida)
                 ? pedido.dataDeSaida
                 : [pedido.dataDeSaida];
 
             return datasSaida
-                .map((data: string) =>
-                    dayjs.utc(data).tz("America/Sao_Paulo")
-                )
+                .map((data: string) => dayjs.tz(data, "America/Sao_Paulo"))
                 .sort((a: any, b: any) => b.valueOf() - a.valueOf())[0]
                 ?.format() ?? null;
         }
-
         case "SEPARACAO":
             return pedido.dataSeparacao;
-
         case "EMISSAO":
             return pedido.dataEmissao;
-
         default:
             return null;
     }
@@ -253,14 +243,15 @@ export class EnviarEmailCliente {
 
                 if (!etapa) continue;
 
-
-                if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido) && pedido.retira) {
-                    console.log(
-                        `Saída futura, aguardando maior data (${pedido.idPedido})`
-                    );
+                if (etapa === "SAIDA" && pedido.retira) {
+                    console.log(`Pedido de retirada, e-mail de saída ignorado (${pedido.idPedido})`);
                     continue;
                 }
 
+                if (etapa === "SAIDA" && !podeEnviarEmailSaida(pedido)) {
+                    console.log(`Data de saída diferente de hoje, aguardando... (${pedido.idPedido})`);
+                    continue;
+                }
 
                 const infoNota = await NotasRepository.findNota(
                     pedido.idNota,
