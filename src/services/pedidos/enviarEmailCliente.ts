@@ -1,11 +1,15 @@
 import dayjs from "dayjs";
-import axios from "axios";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import { ControleCronRepository } from "../../database/repositories/ControleCronRepository";
 import { PedidoRastreamentoRepository } from "../../database/repositories/PedidoRastreamentoRepository";
 import { NotasRepository } from "../../database/repositories/NotasRepository";
 import { PedidoRastreamento } from "../../database/entities/mysql/PedidoRastreamento";
 import { formatCurrency } from "../../functions/formatCurrency";
 import { EmailEnviadosRepository } from "../../database/repositories/EmailEnviadosRepository";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);import axios from "axios";
 
 function getEtapaAtual(pedido: any) {
     if (pedido.dataCancelamento) return "CANCELAMENTO";
@@ -24,12 +28,15 @@ function podeEnviarEmailSaida(pedido: any): boolean {
         : [pedido.dataDeSaida];
 
     const maiorDataSaida = datasSaida
-        .map((data: string) => dayjs(data))
+        .map((data: string) => dayjs.utc(data).tz("America/Sao_Paulo"))
         .sort((a: any, b: any) => b.valueOf() - a.valueOf())[0];
 
     if (!maiorDataSaida) return false;
 
-    return maiorDataSaida.isSame(dayjs(), "day");
+    const hojeSaoPaulo = dayjs()
+        .tz("America/Sao_Paulo");
+
+    return maiorDataSaida.isSame(hojeSaoPaulo, "day");
 }
 
 function getNomeCliente(pedido: any): string {
