@@ -64,6 +64,40 @@ function formatarDestinatarios(emails: string | null | undefined): string {
         .join(",");
 }
 
+function getDataEtapa(pedido: any, etapa: string) {
+    switch (etapa) {
+        case "CANCELAMENTO":
+            return pedido.dataCancelamento;
+
+        case "ENTREGA":
+            return pedido.dataEntrega;
+
+        case "SAIDA": {
+            if (!pedido.dataDeSaida) return null;
+
+            const datasSaida = Array.isArray(pedido.dataDeSaida)
+                ? pedido.dataDeSaida
+                : [pedido.dataDeSaida];
+
+            return datasSaida
+                .map((data: string) =>
+                    dayjs.utc(data).tz("America/Sao_Paulo")
+                )
+                .sort((a: any, b: any) => b.valueOf() - a.valueOf())[0]
+                ?.format() ?? null;
+        }
+
+        case "SEPARACAO":
+            return pedido.dataSeparacao;
+
+        case "EMISSAO":
+            return pedido.dataEmissao;
+
+        default:
+            return null;
+    }
+}
+
 type PedidoComNota = PedidoRastreamento & {
     valorTotalNota?: any;
 };
@@ -183,7 +217,8 @@ export class EnviarEmailCliente {
                     pedidoId: pedido?.idPedido,
                     notaId: pedido?.idNota,
                     valorTotal: formatCurrency(pedido?.valorTotalNota),
-                    etapa
+                    etapa,
+                    dataEtapa: getDataEtapa(pedido, etapa), 
                 },
             })
 
