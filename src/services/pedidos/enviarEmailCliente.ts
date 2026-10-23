@@ -190,7 +190,7 @@ export class EnviarEmailCliente {
                     fields: {
                         nome: getNomeCliente(pedido),
                         pedidoId: pedido?.idPedido,
-                        notaId: pedido?.idNota,
+                        notaId: pedido?.numeroNota,
                         valorTotal: formatCurrency(pedido?.valorTotalNota),
                     },
                     templateId: config.templateId,
@@ -205,7 +205,7 @@ export class EnviarEmailCliente {
                 data: {
                     cliente: getNomeCliente(pedido),
                     pedidoId: pedido?.idPedido,
-                    notaId: pedido?.idNota,
+                    notaId: pedido?.nu,
                     valorTotal: formatCurrency(pedido?.valorTotalNota),
                     etapa,
                     dataEtapa: getDataEtapa(pedido, etapa), 
@@ -274,10 +274,6 @@ export class EnviarEmailCliente {
                         etapa as keyof typeof this.etapaEmailMap
                     ];
 
-
-                /**
-                 * Bloqueia qualquer reenvio da mesma etapa
-                 */
                 if (
                     ultimoEmailEnviado?.ultimaEtapaEmail === etapaAtual
                 ) {
