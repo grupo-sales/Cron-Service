@@ -205,10 +205,10 @@ export class EnviarEmailCliente {
                 data: {
                     cliente: getNomeCliente(pedido),
                     pedidoId: pedido?.idPedido,
-                    notaId: pedido?.nu,
+                    notaId: pedido?.numeroNota,
                     valorTotal: formatCurrency(pedido?.valorTotalNota),
                     etapa,
-                    dataEtapa: getDataEtapa(pedido, etapa), 
+                    dataEtapa: getDataEtapa(pedido, etapa),
                 },
             })
 
