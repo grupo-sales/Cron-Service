@@ -180,7 +180,7 @@ export class EnviarEmailCliente {
             const response = await axios.post("http://172.16.0.34:3000/api/send-email", {
                 data: {
                     mail: {
-                        user: "naoresponda@contatosales.com.br",
+                        user: "nao-responda@salesstatus.com.br",
                         options: {
                             subject: config.subject,
                             from: "Sales",
@@ -194,6 +194,7 @@ export class EnviarEmailCliente {
                         valorTotal: formatCurrency(pedido?.valorTotalNota),
                     },
                     templateId: config.templateId,
+                    emailType: 'status'
                 },
             });
 
